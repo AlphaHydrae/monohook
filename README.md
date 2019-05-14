@@ -60,10 +60,10 @@ Usage:
 
 Options:
   -a, --authorization string   Authentication token that must be sent as a Bearer token in the 'Authorization' header or as the 'authorization' URL query parameter
-  -b, --buffer string          Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite) (default "10")
-  -c, --concurrency string     Maximum number of times the command should be executed in parallel (zero for infinite concurrency) (default "1")
+  -b, --buffer uint            Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite) (default 10)
+  -c, --concurrency uint       Maximum number of times the command should be executed in parallel (zero for infinite concurrency) (default 1)
   -C, --cwd string             Working directory in which to run the command
-  -p, --port string            Port on which to listen to (default "5000")
+  -p, --port uint              Port on which to listen to (default 5000)
   -q, --quiet                  Do not print anything (default false)
 
 Examples:

@@ -2,14 +2,6 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:c6872fbc5399e91e4854bd32e842998722ed8419a82aa8a6aaeaad9068fcd0af"
-  name = "github.com/buildkite/interpolate"
-  packages = ["."]
-  pruneopts = ""
-  revision = "973457fa2b4c81e6b755ac41509d41f18027ca77"
-
-[[projects]]
   digest = "1:e988ed0ca0d81f4d28772760c02ee95084961311291bdfefc1b04617c178b722"
   name = "github.com/fatih/color"
   packages = ["."]
@@ -43,17 +35,16 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:55c52474bb389797ed66db92966e2b9ddc98a25d9d05c8aa55787fe03d4d4084"
+  digest = "1:c94b7a0d1888676e4644809f04fab1e454036205b5470f3bbf238eeb834d6d03"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = ""
-  revision = "4b34438f7a67ee5f45cc6132e2bad873a20324e9"
+  revision = "3a4b5fb9f71f5874b2374ae059bc0e0bcb52e145"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/buildkite/interpolate",
     "github.com/fatih/color",
     "github.com/spf13/pflag",
   ]

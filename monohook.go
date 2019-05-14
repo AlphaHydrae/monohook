@@ -9,9 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
-	"github.com/buildkite/interpolate"
+	"github.com/alphahydrae/monohook/utils"
 	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
@@ -40,21 +39,25 @@ type commandOptions struct {
 
 func main() {
 
-	var authString string
-	var bufferString string
-	var concurrencyString string
-	var cwdString string
-	var quiet bool
-	var portString string
+	var auth string
+	var buffer uint64
+	var concurrency uint64
+	var cwd string
+	var port uint16
+
+	quiet := false
+	errHandler := func(code int, message string) {
+		fail(code, quiet, message)
+	}
 
 	flag.CommandLine.SetOutput(os.Stdout)
+	utils.BoolOption(&quiet, "quiet", "q", "QUIET", false, "Do not print anything (default false)", errHandler)
 
-	flag.StringVarP(&authString, "authorization", "a", "", "Authentication token that must be sent as a Bearer token in the 'Authorization' header or as the 'authorization' URL query parameter")
-	flag.StringVarP(&bufferString, "buffer", "b", "10", "Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite)")
-	flag.StringVarP(&concurrencyString, "concurrency", "c", "1", "Maximum number of times the command should be executed in parallel (zero for infinite concurrency)")
-	flag.StringVarP(&cwdString, "cwd", "C", "", "Working directory in which to run the command")
-	flag.BoolVarP(&quiet, "quiet", "q", false, "Do not print anything (default false)")
-	flag.StringVarP(&portString, "port", "p", "5000", "Port on which to listen to")
+	utils.StringOption(&auth, "authorization", "a", "AUTHORIZATION", "", "Authentication token that must be sent as a Bearer token in the 'Authorization' header or as the 'authorization' URL query parameter")
+	utils.Uint64Option(&buffer, "buffer", "b", "BUFFER", 10, "Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite)", errHandler)
+	utils.Uint64Option(&concurrency, "concurrency", "c", "CONCURRENCY", 1, "Maximum number of times the command should be executed in parallel (zero for infinite concurrency)", errHandler)
+	utils.StringOption(&cwd, "cwd", "C", "CWD", "", "Working directory in which to run the command")
+	utils.Uint16Option(&port, "port", "p", "PORT", 5000, "Port on which to listen to", errHandler)
 
 	flag.Usage = func() {
 		fmt.Printf(usageHeader, os.Args[0], os.Args[0])
@@ -63,16 +66,6 @@ func main() {
 	}
 
 	flag.Parse()
-
-	auth := parseStringOption(authString, "authorization", quiet)
-	buffer := parseUint64Option(bufferString, "buffer", quiet)
-	concurrency := parseUint64Option(concurrencyString, "concurrency", quiet)
-	cwd := parseStringOption(cwdString, "cwd", quiet)
-	port := parseUint64Option(portString, "port", quiet)
-
-	if port > 65535 {
-		fail(1, quiet, "port number must be smaller than or equal to 65535")
-	}
 
 	terminator := -1
 	for i := 0; i < len(os.Args); i++ {
@@ -89,22 +82,18 @@ func main() {
 		extra = flag.Args()[0 : len(flag.Args())-(len(os.Args)-terminator-1)]
 
 		var err error
-		execCommand, err = exec.LookPath(parseStringOption(os.Args[terminator+1], "command", quiet))
+		execCommand, err = exec.LookPath(os.Args[terminator+1])
 		if err != nil {
 			fail(3, quiet, "could not find command \"%s\"", os.Args[terminator+1])
 		}
 
 		execArgs = os.Args[terminator+2 : len(os.Args)]
-
-		for k := range execArgs {
-			execArgs[k] = parseStringOption(execArgs[k], "command argument "+strconv.FormatInt(int64(k), 10), quiet)
-		}
 	} else {
 		extra = flag.Args()
 	}
 
 	if len(extra) != 0 {
-		fail(1, quiet, "no argument expected before the terminator")
+		fail(1, quiet, "no argument expected before the terminator (put -- before the command to execute)")
 	} else if execCommand == "" {
 		fail(1, quiet, "no command to execute was provided")
 	}
@@ -125,7 +114,7 @@ func main() {
 		}
 
 		// Refuse request if unauthorized.
-		if !isAuthorized(auth, r) {
+		if !utils.Authorized(auth, r) {
 			w.WriteHeader(403)
 			return
 		}
@@ -140,45 +129,12 @@ func main() {
 	})
 
 	s := &http.Server{
-		Addr:           ":" + strconv.FormatUint(port, 10),
-		Handler:        nil,
-		ReadTimeout:    10 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+		Addr: ":" + strconv.FormatUint(uint64(port), 10),
 	}
 
 	go worker(concurrency, execCh)
 
 	s.ListenAndServe()
-}
-
-func interpolateValue(value string) (string, error) {
-	return interpolate.Interpolate(interpolate.NewSliceEnv(os.Environ()), value)
-}
-
-func parseStringOption(value string, name string, quiet bool) string {
-
-	interpolated, err := interpolateValue(value)
-	if err != nil {
-		fail(2, quiet, "%s could not be interpolated", name)
-	}
-
-	return interpolated
-}
-
-func parseUint64Option(value string, name string, quiet bool) uint64 {
-
-	interpolated, err := interpolate.Interpolate(interpolate.NewSliceEnv(os.Environ()), value)
-	if err != nil {
-		fail(2, quiet, "the \"%s\" option could not be interpolated", name)
-	}
-
-	parsed, err := strconv.ParseUint(interpolated, 10, 64)
-	if err != nil {
-		fail(1, quiet, "the \"%s\" option must be an unsigned 64-bit integer", name)
-	}
-
-	return parsed
 }
 
 func worker(concurrency uint64, execChannel chan *commandOptions) {
@@ -229,28 +185,4 @@ func fail(code int, quiet bool, format string, values ...interface{}) {
 	}
 
 	os.Exit(code)
-}
-
-func isAuthorized(auth string, req *http.Request) bool {
-	if auth == "" {
-		return true
-	}
-
-	header := req.Header.Get("Authorization")
-	if header != "" && len(header) >= 8 && header[0:7] == "Bearer " && header[7:] == auth {
-		return true
-	}
-
-	query := req.URL.Query()["authorization"]
-	if len(query) == 0 {
-		return false
-	}
-
-	for _, value := range query {
-		if value == auth {
-			return true
-		}
-	}
-
-	return false
 }
