@@ -3,9 +3,11 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,7 +37,11 @@ type commandOptions struct {
 	command string
 	args    []string
 	cwd     string
+	env     []string
+	reader  *io.PipeReader
 }
+
+var httpRequestHeaderToEnvVarRegexp = regexp.MustCompile("-")
 
 func main() {
 
@@ -98,11 +104,6 @@ func main() {
 		fail(1, quiet, "no command to execute was provided")
 	}
 
-	opts := &commandOptions{}
-	opts.command = execCommand
-	opts.args = execArgs
-	opts.cwd = cwd
-
 	execCh := make(chan *commandOptions, buffer)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +120,22 @@ func main() {
 			return
 		}
 
+		opts := &commandOptions{}
+		opts.command = execCommand
+		opts.args = execArgs
+		opts.cwd = cwd
+
+		var env []string
+		env = append(env, os.Environ()...)
+		for headerName, headerVals := range r.Header {
+			env = append(env, utils.EnvPrefix+"REQUEST_HEADER_"+strings.ToUpper(httpRequestHeaderToEnvVarRegexp.ReplaceAllString(headerName, "_"))+"="+strings.Join(headerVals, ","))
+		}
+
+		opts.env = env
+
+		pr, pw := io.Pipe()
+		opts.reader = pr
+
 		// Refuse extra requests if buffer is full.
 		select {
 		case execCh <- opts:
@@ -126,6 +143,9 @@ func main() {
 		default:
 			w.WriteHeader(429)
 		}
+
+		io.Copy(pw, r.Body)
+		pw.Close()
 	})
 
 	s := &http.Server{
@@ -143,14 +163,14 @@ func worker(concurrency uint64, execChannel chan *commandOptions) {
 	n := uint64(0)
 	wait := &sync.WaitGroup{}
 
-	for job := range execChannel {
+	for opts := range execChannel {
 
 		if concurrency >= 1 {
 			n++
 			wait.Add(1)
 		}
 
-		go execCommand(job, wait)
+		go execCommand(opts, wait)
 
 		// Wait for queue to clear if concurrency is limited.
 		if concurrency >= 1 && n >= concurrency {
@@ -165,9 +185,10 @@ func execCommand(opts *commandOptions, waitGroup *sync.WaitGroup) {
 	fmt.Fprintf(os.Stderr, color.YellowString("Executing %s\n"), opts.command)
 
 	cmd := exec.Command(opts.command, opts.args...)
-	cmd.Env = os.Environ()
+	cmd.Env = opts.env
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
+	cmd.Stdin = opts.reader
 
 	err := cmd.Run()
 	if err != nil {
@@ -175,6 +196,8 @@ func execCommand(opts *commandOptions, waitGroup *sync.WaitGroup) {
 	} else {
 		fmt.Fprintf(os.Stderr, color.GreenString("Successfully executed %s\n"), opts.command)
 	}
+
+	opts.reader.Close()
 
 	waitGroup.Done()
 }

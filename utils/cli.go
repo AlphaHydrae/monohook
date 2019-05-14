@@ -9,10 +9,11 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-const envPrefix = "MONOHOOK_"
-
 var falseRegexp = regexp.MustCompile("^(?:0|n|no|f|false)$")
 var trueRegexp = regexp.MustCompile("^(?:1|y|yes|t|true)$")
+
+// EnvPrefix is the prefix common to environment variables for monohook.
+const EnvPrefix = "MONOHOOK_"
 
 // ErrorHandler can be called if an error occurs while parsing a command line
 // option.
@@ -24,7 +25,7 @@ func BoolOption(value *bool, longOpt string, shortOpt string, envVarName string,
 
 	defaultFlagVal := defaultVal
 
-	envVar := envPrefix + envVarName
+	envVar := EnvPrefix + envVarName
 	envValue := os.Getenv(envVar)
 	if trueRegexp.MatchString(envValue) {
 		defaultFlagVal = true
@@ -43,7 +44,7 @@ func StringOption(value *string, longOpt string, shortOpt string, envVarName str
 
 	defaultFlagVal := defaultVal
 
-	envVar := envPrefix + envVarName
+	envVar := EnvPrefix + envVarName
 	envValue := os.Getenv(envVar)
 	if envValue != "" {
 		defaultFlagVal = envValue
@@ -73,7 +74,7 @@ func Uint64Option(value *uint64, longOpt string, shortOpt string, envVarName str
 
 	defaultFlagVal := defaultVal
 
-	envVar := envPrefix + envVarName
+	envVar := EnvPrefix + envVarName
 	envValue := os.Getenv(envVar)
 	if envValue != "" {
 
