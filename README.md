@@ -11,7 +11,7 @@ $> monohook --authorization letmein --concurrency 1 --port 3000 -- deploy.sh
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[![version](https://img.shields.io/badge/Version-v1.0.0-blue.svg)](https://github.com/AlphaHydrae/monohook/releases/tag/v1.0.0)
+[![version](https://img.shields.io/badge/Version-v2.0.0-blue.svg)](https://github.com/AlphaHydrae/monohook/releases/tag/v2.0.0)
 [![build status](https://travis-ci.org/AlphaHydrae/monohook.svg?branch=master)](https://travis-ci.org/AlphaHydrae/monohook)
 [![license](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 
@@ -23,28 +23,28 @@ $> monohook --authorization letmein --concurrency 1 --port 3000 -- deploy.sh
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v2.2.0/monohook_linux_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v2.0.0/monohook_linux_amd64 && \
     chmod +x /usr/local/bin/monohook
   ```
 * **Linux (arm64)**
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v2.2.0/monohook_linux_arm64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v2.0.0/monohook_linux_arm64 && \
     chmod +x /usr/local/bin/monohook
   ```
 * **macOS**
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v2.2.0/monohook_darwin_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v2.0.0/monohook_darwin_amd64 && \
     chmod +x /usr/local/bin/monohook
   ```
 * **Windows**
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v2.2.0/monohook_windows_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v2.0.0/monohook_windows_amd64 && \
     chmod +x /usr/local/bin/monohook
   ```
 
