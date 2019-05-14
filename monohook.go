@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,7 +49,7 @@ func main() {
 
 	flag.CommandLine.SetOutput(os.Stdout)
 
-	flag.StringVarP(&authString, "authorization", "a", "", "Bearer token that must be sent in the Authorization header to authenticate")
+	flag.StringVarP(&authString, "authorization", "a", "", "Authentication token that must be sent as a Bearer token in the 'Authorization' header or as the 'authorization' URL query parameter")
 	flag.StringVarP(&bufferString, "buffer", "b", "10", "Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite)")
 	flag.StringVarP(&concurrencyString, "concurrency", "c", "1", "Maximum number of times the command should be executed in parallel (zero for infinite concurrency)")
 	flag.StringVarP(&cwdString, "cwd", "C", "", "Working directory in which to run the command")
@@ -117,13 +118,16 @@ func main() {
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 
-		if auth != "" {
-			// Refuse request if unauthorized.
-			header := r.Header.Get("Authorization")
-			if header == "" || header[0:7] != "Bearer " || header[7:] != auth {
-				w.WriteHeader(403)
-				return
-			}
+		// Refuse non-POST requests
+		if strings.ToUpper(r.Method) != "POST" {
+			w.WriteHeader(405)
+			return
+		}
+
+		// Refuse request if unauthorized.
+		if !isAuthorized(auth, r) {
+			w.WriteHeader(403)
+			return
 		}
 
 		// Refuse extra requests if buffer is full.
@@ -202,7 +206,7 @@ func worker(concurrency uint64, execChannel chan *commandOptions) {
 
 func execCommand(opts *commandOptions, waitGroup *sync.WaitGroup) {
 
-	fmt.Fprintf(os.Stderr, "Executing %s\n", opts.command)
+	fmt.Fprintf(os.Stderr, color.YellowString("Executing %s\n"), opts.command)
 
 	cmd := exec.Command(opts.command, opts.args...)
 	cmd.Env = os.Environ()
@@ -225,4 +229,28 @@ func fail(code int, quiet bool, format string, values ...interface{}) {
 	}
 
 	os.Exit(code)
+}
+
+func isAuthorized(auth string, req *http.Request) bool {
+	if auth == "" {
+		return true
+	}
+
+	header := req.Header.Get("Authorization")
+	if header != "" && len(header) >= 8 && header[0:7] == "Bearer " && header[7:] == auth {
+		return true
+	}
+
+	query := req.URL.Query()["authorization"]
+	if len(query) == 0 {
+		return false
+	}
+
+	for _, value := range query {
+		if value == auth {
+			return true
+		}
+	}
+
+	return false
 }
