@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/fatih/color"
 	flag "github.com/spf13/pflag"
 )
 
@@ -18,6 +19,24 @@ const EnvPrefix = "MONOHOOK_"
 // ErrorHandler can be called if an error occurs while parsing a command line
 // option.
 type ErrorHandler func(code int, message string)
+
+// Fail prints a message in red to the standard error stream (as long as the
+// `quiet` option is false) and exits the process with a non-zero code.
+func Fail(code int, quiet bool, format string, values ...interface{}) {
+	if !quiet {
+		Print(quiet, fmt.Sprintf(color.RedString("Error: "+format+"\n"), values...))
+	}
+
+	os.Exit(code)
+}
+
+// Print prints a message to the standard error stream (as long as the `quiet`
+// option is false).
+func Print(quiet bool, format string, values ...interface{}) {
+	if !quiet {
+		fmt.Fprintf(os.Stderr, format, values...)
+	}
+}
 
 // BoolOption parses and returns the value of a boolean option, either from
 // command line flags or from an environment variable.
