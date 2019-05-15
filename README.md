@@ -42,7 +42,9 @@ The command is executed asynchronously.
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-[![version](https://img.shields.io/badge/Version-v3.0.0-blue.svg)](https://github.com/AlphaHydrae/monohook/releases/tag/v3.0.0)
+* [Changelog](CHANGELOG.md)
+
+[![version](https://img.shields.io/badge/Version-v3.0.1-blue.svg)](https://github.com/AlphaHydrae/monohook/releases/tag/v3.0.1)
 [![build status](https://travis-ci.org/AlphaHydrae/monohook.svg?branch=master)](https://travis-ci.org/AlphaHydrae/monohook)
 [![license](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 
@@ -76,7 +78,7 @@ To use MonoHook in a `Dockerfile`, simply download the binary and make it execut
 
 ```
 RUN wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.0/monohook_linux_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.1/monohook_linux_amd64 && \
     chmod +x /usr/local/bin/monohook
 ```
 
@@ -86,28 +88,28 @@ RUN wget -O /usr/local/bin/monohook \
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.0/monohook_linux_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.1/monohook_linux_amd64 && \
     chmod +x /usr/local/bin/monohook
   ```
 * **Linux (arm64)**
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.0/monohook_linux_arm64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.1/monohook_linux_arm64 && \
     chmod +x /usr/local/bin/monohook
   ```
 * **macOS**
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.0/monohook_darwin_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.1/monohook_darwin_amd64 && \
     chmod +x /usr/local/bin/monohook
   ```
 * **Windows**
 
   ```
   wget -O /usr/local/bin/monohook \
-    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.0/monohook_windows_amd64 && \
+    https://github.com/AlphaHydrae/monohook/releases/download/v3.0.1/monohook_windows_amd64 && \
     chmod +x /usr/local/bin/monohook
   ```
 

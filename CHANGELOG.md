@@ -1,5 +1,9 @@
 # Changelog
 
+## v3.0.1
+
+* Fix the `-p, --port` command-line flag which had no effect.
+
 ## v3.0.0
 
 * **Breaking:** environment variables are no longer interpolated in command-line
