@@ -17,7 +17,7 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-const usageHeader = `%s runs a single HTTP webhook endpoint that executes a command.
+const usageHeader = `%s exposes a single HTTP webhook endpoint that executes a command.
 
 Usage:
   %s [OPTION...] [--] [EXEC...]
@@ -90,7 +90,7 @@ func main() {
 		var err error
 		execCommand, err = exec.LookPath(os.Args[terminator+1])
 		if err != nil {
-			fail(3, quiet, "could not find command \"%s\"", os.Args[terminator+1])
+			fail(2, quiet, "could not find command \"%s\"", os.Args[terminator+1])
 		}
 
 		execArgs = os.Args[terminator+2 : len(os.Args)]
@@ -116,7 +116,7 @@ func main() {
 
 		// Refuse request if unauthorized.
 		if !utils.Authorized(auth, r) {
-			w.WriteHeader(403)
+			w.WriteHeader(401)
 			return
 		}
 
