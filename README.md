@@ -290,7 +290,7 @@ Successfully executed /bin/sleep
 ```
 
 > You may specify infinite concurrency by setting a concurrency of zero:
-> `monohook -c 0 -- sleep 2.
+> `monohook -c 0 -- sleep 2`.
 
 ### Buffering
 
