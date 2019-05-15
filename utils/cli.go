@@ -72,21 +72,6 @@ func StringOption(value *string, longOpt string, shortOpt string, envVarName str
 	flag.StringVarP(value, longOpt, shortOpt, defaultFlagVal, desc)
 }
 
-// Uint16Option parses and returns the value of an unsigned integer option with
-// a maximum value of 65535, either from command line flags or from an
-// environment variable.
-func Uint16Option(value *uint16, longOpt string, shortOpt string, envVarName string, defaultVal uint64, desc string, fail ErrorHandler) {
-
-	var uint64Value uint64
-
-	Uint64Option(&uint64Value, longOpt, shortOpt, envVarName, defaultVal, desc, fail)
-	if uint64Value > 65535 {
-		fail(1, fmt.Sprintf("option --%s or environment variable $%s must be an integer smaller than or equal to 65535", longOpt, envVarName))
-	}
-
-	*value = uint16(uint64Value)
-}
-
 // Uint64Option parses and returns the value of an unsigned integer option,
 // either from command line flags or from an environment variable.
 func Uint64Option(value *uint64, longOpt string, shortOpt string, envVarName string, defaultVal uint64, desc string, fail ErrorHandler) {

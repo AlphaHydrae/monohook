@@ -53,7 +53,7 @@ func main() {
 	var forwardRequestBody bool
 	var forwardRequestHeaders bool
 	var forwardRequestURL bool
-	var port uint16
+	var port uint64
 
 	quiet := false
 	errHandler := func(code int, message string) {
@@ -70,7 +70,7 @@ func main() {
 	utils.BoolOption(&forwardRequestHeaders, "forward-request-headers", "H", "FORWARD_REQUEST_HEADERS", false, "Whether to forward each HTTP request's headers to the the command as environment variables (e.g. Content-Type becomes $MONOHOOK_REQUEST_HEADER_CONTENT_TYPE)", errHandler)
 	utils.BoolOption(&forwardRequestURL, "forward-request-url", "U", "FORWARD_REQUEST_URL", false, "Whether to forward each HTTP request's URL to the the command as the $MONOHOOK_REQUEST_URL environment variable", errHandler)
 	utils.StringOption(&cwd, "cwd", "C", "CWD", "", "Working directory in which to run the command")
-	utils.Uint16Option(&port, "port", "p", "PORT", 5000, "Port on which to listen to", errHandler)
+	utils.Uint64Option(&port, "port", "p", "PORT", 5000, "Port on which to listen to", errHandler)
 
 	flag.Usage = func() {
 		fmt.Printf(usageHeader, os.Args[0], os.Args[0])
@@ -79,6 +79,10 @@ func main() {
 	}
 
 	flag.Parse()
+
+	if port > 65535 {
+		utils.Fail(1, quiet, "option -p, --port or environment variable $PORT must be an integer smaller than or equal to 65535")
+	}
 
 	terminator := -1
 	for i := 0; i < len(os.Args); i++ {
@@ -173,7 +177,7 @@ func main() {
 	})
 
 	s := &http.Server{
-		Addr: ":" + strconv.FormatUint(uint64(port), 10),
+		Addr: ":" + strconv.FormatUint(port, 10),
 	}
 
 	go worker(concurrency, quiet, execCh)
