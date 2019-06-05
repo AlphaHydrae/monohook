@@ -358,6 +358,12 @@ default. You may choose to forward part or all of the following data:
   or the `$MONOHOOK_FORWARD_REQUEST_BODY` environment variable.
 
   If enabled, the request body will be piped to the command's standard input.
+
+  If the `-Y, --cache-request-body` command-line flag or the
+  `$MONOHOOK_CACHE_REQUEST_BODY` environment variable is also enabled, the
+  request body will be read immediately and cached for when the hook executes
+  (which might take a while depending on concurrency settings). Otherwise, the
+  request will wait to complete until the hook can actually execute.
 * HTTP request headers with the `-H, --forward-request-headers` command-line
   flag or the `$MONOHOOK_FORWARD_REQUEST_HEADERS` environment variable.
 
@@ -391,10 +397,12 @@ $> cat body.txt
 0123456789
 ```
 
-> Note that forwarding the request body means that the execution of the command
-> will not end before the HTTP request body has been completely consumed. This
-> may have a performance impact. For example, with a concurrency of 1, each
-> request will have to wait for the previous one to upload its data.
+> Note that forwarding the request body without caching it (using the `-Y,
+> --cache-request-body` command-line flag or the `$MONOHOOK_CACHE_REQUEST_BODY`
+> environment variable) means that the execution of the command will not end
+> before the HTTP request body has been completely consumed. This may have a
+> performance impact. For example, with a concurrency of 1, each request will
+> have to wait for the previous one to upload its data.
 
 ### Port number
 
@@ -413,6 +421,7 @@ Usage:
 Options:
   -a, --authorization string      Authentication token that must be sent as a Bearer token in the 'Authorization' header or as the 'authorization' URL query parameter
   -b, --buffer uint               Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite) (default 10)
+  -Y, --cache-request-body        Whether to cache the HTTP request's body so the hook can return right away
   -c, --concurrency uint          Maximum number of times the command should be executed in parallel (zero for infinite concurrency) (default 1)
   -C, --cwd string                Working directory in which to run the command
   -B, --forward-request-body      Whether to forward each HTTP request's body to the the command's standard input

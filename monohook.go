@@ -2,8 +2,10 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -40,6 +42,7 @@ type commandOptions struct {
 	env     []string
 	quiet   bool
 	reader  *io.PipeReader
+	cache   []byte
 }
 
 var httpRequestHeaderToEnvVarRegexp = regexp.MustCompile("-")
@@ -51,6 +54,7 @@ func main() {
 	var concurrency uint64
 	var cwd string
 	var forwardRequestBody bool
+	var cacheRequestBody bool
 	var forwardRequestHeaders bool
 	var forwardRequestURL bool
 	var port uint64
@@ -67,6 +71,7 @@ func main() {
 	utils.Uint64Option(&buffer, "buffer", "b", "BUFFER", 10, "Maximum number of requests to queue before refusing subsequent ones until the queue is freed (zero for infinite)", errHandler)
 	utils.Uint64Option(&concurrency, "concurrency", "c", "CONCURRENCY", 1, "Maximum number of times the command should be executed in parallel (zero for infinite concurrency)", errHandler)
 	utils.BoolOption(&forwardRequestBody, "forward-request-body", "B", "FORWARD_REQUEST_BODY", false, "Whether to forward each HTTP request's body to the the command's standard input", errHandler)
+	utils.BoolOption(&cacheRequestBody, "cache-request-body", "Y", "CACHE_REQUEST_BODY", false, "Whether to cache the HTTP request's body so the hook can return right away", errHandler)
 	utils.BoolOption(&forwardRequestHeaders, "forward-request-headers", "H", "FORWARD_REQUEST_HEADERS", false, "Whether to forward each HTTP request's headers to the the command as environment variables (e.g. Content-Type becomes $MONOHOOK_REQUEST_HEADER_CONTENT_TYPE)", errHandler)
 	utils.BoolOption(&forwardRequestURL, "forward-request-url", "U", "FORWARD_REQUEST_URL", false, "Whether to forward each HTTP request's URL to the the command as the $MONOHOOK_REQUEST_URL environment variable", errHandler)
 	utils.StringOption(&cwd, "cwd", "C", "CWD", "", "Working directory in which to run the command")
@@ -80,7 +85,9 @@ func main() {
 
 	flag.Parse()
 
-	if port > 65535 {
+	if cacheRequestBody && !forwardRequestBody {
+		utils.Fail(1, quiet, "option -Y, --cache-request-body can only be used together with option -B, --forward-request-body")
+	} else if port > 65535 {
 		utils.Fail(1, quiet, "option -p, --port or environment variable $PORT must be an integer smaller than or equal to 65535")
 	}
 
@@ -140,9 +147,20 @@ func main() {
 		// Forward HTTP request body to the command's standard input.
 		var pw *io.PipeWriter
 		if forwardRequestBody {
-			reader, writer := io.Pipe()
-			opts.reader = reader
-			pw = writer
+			if cacheRequestBody {
+				body, err := ioutil.ReadAll(r.Body)
+				if err != nil {
+					utils.Print(quiet, "Warning: could not read request body: %s\n", err)
+					w.WriteHeader(400)
+					return
+				}
+
+				opts.cache = body
+			} else {
+				reader, writer := io.Pipe()
+				opts.reader = reader
+				pw = writer
+			}
 		}
 
 		var env []string
@@ -171,8 +189,16 @@ func main() {
 		}
 
 		if pw != nil {
-			io.Copy(pw, r.Body)
-			pw.Close()
+
+			_, err := io.Copy(pw, r.Body)
+			if err != nil {
+				utils.Print(quiet, "Warning: could not read entire request body: %s\n", err)
+			}
+
+			pwErr := pw.Close()
+			if pwErr != nil {
+				utils.Print(quiet, "Warning: could not close request body pipe: %s\n", pwErr)
+			}
 		}
 	})
 
@@ -220,7 +246,9 @@ func execCommand(opts *commandOptions, waitGroup *sync.WaitGroup) {
 	cmd.Stderr = os.Stdout
 	cmd.Stdout = os.Stdout
 
-	if opts.reader != nil {
+	if opts.cache != nil {
+		cmd.Stdin = bytes.NewBuffer(opts.cache)
+	} else if opts.reader != nil {
 		cmd.Stdin = opts.reader
 	}
 
