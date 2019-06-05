@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.1.0
+
+* Support reading the request body immediately and caching it for when the hook
+  actually executes, using the `-Y, --cache-request-body` command-line flag or
+  the corresponding `$MONOHOOK_CACHE_REQUEST_BODY` environment variable.
+
 ## v3.0.1
 
 * Fix the `-p, --port` command-line flag which had no effect.
